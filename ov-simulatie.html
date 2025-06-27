@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>OV-Chipkaart Simulatie (Platina)</title>
+    <style>
+        :root {
+            --primary: #0066cc;
+            --secondary: #ffcc00;
+            --dark: #333;
+            --light: #f8f9fa;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #e9ecef;
+            margin: 0;
+            padding: 0;
+            color: var(--dark);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            margin: 0;
+            font-size: 2.2rem;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:hover {
+            background-color: #0055aa;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        #bus-animation {
+            width: 100%;
+            height: 120px;
+            background: linear-gradient(to bottom, #6c757d, #adb5bd);
+            margin: 30px 0;
+            position: relative;
+            overflow: hidden;
+            border-radius: 10px;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        #bus {
+            width: 180px;
+            position: absolute;
+            left: -180px;
+            top: 20px;
+            filter: drop-shadow(2px 4px 6px rgba(0, 0, 0, 0.3));
+            transition: left 8s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        
+        .bus-stop {
+            position: absolute;
+            width: 40px;
+            height: 60px;
+            background-color: var(--secondary);
+            bottom: 0;
+            border-radius: 5px 5px 0 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--dark);
+            font-weight: bold;
+        }
+        
+        #passengers-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            padding: 20px 0;
+        }
+        
+        .passenger-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+        
+        .passenger-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .passenger-img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 15px;
+            border: 4px solid var(--primary);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .passenger-info {
+            margin-bottom: 15px;
+        }
+        
+        .passenger-name {
+            font-size: 1.3rem;
+            color: var(--primary);
+            margin: 5px 0;
+        }
+        
+        .passenger-detail {
+            margin: 5px 0;
+            font-size: 0.9rem;
+        }
+        
+        .passenger-actions {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .action-btn {
+            padding: 8px 15px;
+            font-size: 0.8rem;
+            border-radius: 20px;
+        }
+        
+        .checkout-btn {
+            background-color: #dc3545;
+        }
+        
+        .checkout-btn:hover {
+            background-color: #c82333;
+        }
+        
+        .add-funds-btn {
+            background-color: #28a745;
+        }
+        
+        .add-funds-btn:hover {
+            background-color: #218838;
+        }
+        
+        .status-message {
+            text-align: center;
+            margin: 20px 0;
+            padding: 10px;
+            background-color: var(--secondary);
+            border-radius: 5px;
+            font-weight: bold;
+            display: none;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>OV-Chipkaart Simulatie</h1>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="controls">
+            <button onclick="addRandomPassenger()">
+                <i class="fas fa-user-plus"></i> Passagier toevoegen
+            </button>
+            <button onclick="startBus()">
+                <i class="fas fa-bus"></i> Bus laten rijden
+            </button>
+        </div>
+        
+        <div id="status-message" class="status-message"></div>
+        
+        <div id="bus-animation">
+            <div class="bus-stop" style="left: 20%;">Centrum</div>
+            <div class="bus-stop" style="left: 50%;">Station</div>
+            <div class="bus-stop" style="left: 80%;">Eindhalte</div>
+            <img id="bus" src="bus.png" alt="Bus">
+        </div>
+        
+        <div id="passengers-container"></div>
+    </div>
+
+    <audio id="checkin-sound" src="Ping.mp3"></audio>
+    <audio id="checkout-sound" src="Ping.mp3"></audio>
+    <audio id="bus-sound" src="Ping.mp3"></audio>
+    <audio id="add-passenger-sound" src="Ping.mp3"></audio>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <script src="ovpaal.js"></script>
+    <script>
+        // Verbeterde functies voor de simulatie
+        function showStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status-message');
+            statusEl.textContent = message;
+            statusEl.style.display = 'block';
+            statusEl.style.backgroundColor = type === 'error' ? '#dc3545' : 
+                                           type === 'success' ? '#28a745' : '#ffcc00';
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, 3000);
+        }
+
+        function updateDisplay() {
+            const container = document.getElementById('passengers-container');
+            container.innerHTML = '';
+            
+            if (passengersData.length === 0) {
+                container.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">Geen passagiers aanwezig</p>';
+                return;
+            }
+            
+            passengersData.forEach((p, index) => {
+                const card = document.createElement('div');
+                card.className = 'passenger-card fade-in';
+                card.style.animationDelay = `${index * 0.1}s`;
+                card.innerHTML = `
+                    <img class="passenger-img" src="https://i.pravatar.cc/150?u=${p.id}" alt="${p.naam}">
+                    <div class="passenger-info">
+                        <h3 class="passenger-name">${p.naam}</h3>
+                        <p class="passenger-detail"><strong>Saldo:</strong> €${p.saldo.toFixed(2)}</p>
+                        <p class="passenger-detail"><strong>Woonplaats:</strong> ${p.woonplaats}</p>
+                        <p class="passenger-detail"><strong>ID:</strong> ${p.id}</p>
+                    </div>
+                    <div class="passenger-actions">
+                        <button class="action-btn checkout-btn" onclick="checkInOut('${p.id}', -2)">
+                            <i class="fas fa-sign-out-alt"></i> Uitchecken (-€2)
+                        </button>
+                        <button class="action-btn add-funds-btn" onclick="checkInOut('${p.id}', 10)">
+                            <i class="fas fa-coins"></i> Opladen (+€10)
+                        </button>
+                        <button class="action-btn" onclick="removePassenger('${p.id}')">
+                            <i class="fas fa-trash"></i> Verwijderen
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function playSound(type) {
+            const sound = document.getElementById(`${type}-sound`);
+            if (sound) {
+                sound.currentTime = 0;
+                sound.play().catch(e => console.log("Geluid kon niet worden afgespeeld:", e));
+            }
+        }
+
+        function addRandomPassenger() {
+            const names = ["Emma", "Liam", "Sophie", "Noah", "Mila", "Daan", "Luna", "Sem", "Tess", "Jesse"];
+            const cities = ["Amsterdam", "Rotterdam", "Utrecht", "Den Haag", "Eindhoven", "Groningen", "Maastricht", "Nijmegen"];
+            const randomId = Math.floor(Math.random() * 1000000);
+            const randomName = names[Math.floor(Math.random() * names.length)];
+            const randomCity = cities[Math.floor(Math.random() * cities.length)];
+            
+            addPassenger(
+                randomId,
+                randomName,
+                Math.floor(Math.random() * 50),
+                randomCity,
+                "06" + Math.floor(Math.random() * 100000000).toString().padStart(8, '0')
+            );
+            playSound('add-passenger');
+            showStatus(`${randomName} is toegevoegd aan het systeem!`, 'success');
+            updateDisplay();
+        }
+
+        function startBus() {
+            playSound("bus");
+            const bus = document.getElementById("bus");
+            bus.style.left = "-180px";
+            
+            setTimeout(() => {
+                bus.style.left = "20%";
+                setTimeout(() => {
+                    bus.style.left = "50%";
+                    setTimeout(() => {
+                        bus.style.left = "80%";
+                        setTimeout(() => {
+                            bus.style.left = "calc(100% + 180px)";
+                        }, 2000);
+                    }, 2000);
+                }, 2000);
+            }, 100);
+            
+            showStatus("Bus is onderweg... haltes: Centrum → Station → Eindhalte");
+        }
+
+        // Initialisatie
+        updateDisplay();
+
+        // Pas de functies uit ovpaal.js aan voor geluid en status
+        const originalCheckInOut = checkInOut;
+        checkInOut = function(id, amount) {
+            const passenger = passengersData.find(p => p.id == id);
+            if (!passenger) {
+                showStatus("Passagier niet gevonden!", "error");
+                return;
+            }
+            
+            originalCheckInOut(id, amount);
+            
+            if (amount < 0) {
+                playSound("checkout");
+                showStatus(`${passenger.naam} heeft uitgecheckt. €${Math.abs(amount)} afgeschreven.`, "success");
+            } else {
+                playSound("checkin");
+                showStatus(`${passenger.naam} heeft €${amount} opgeladen. Nieuw saldo: €${passenger.saldo}`, "success");
+            }
+            
+            updateDisplay();
+        };
+
+        const originalRemovePassenger = removePassenger;
+        removePassenger = function(id) {
+            const passenger = passengersData.find(p => p.id == id);
+            if (passenger) {
+                originalRemovePassenger(id);
+                showStatus(`${passenger.naam} is verwijderd uit het systeem.`, "success");
+                updateDisplay();
+            } else {
+                showStatus("Passagier niet gevonden!", "error");
+            }
+        };
+    </script>
+</body>
+</html>
